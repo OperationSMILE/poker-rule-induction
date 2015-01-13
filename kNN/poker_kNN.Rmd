@@ -1,0 +1,60 @@
+---
+title: "Kaggle Poker Rule Induction"
+author: "June Lau"
+date: "Monday, December 29, 2014"
+output: pdf_document
+---
+
+# Purpose
+To document a KNN model approach to inferring rules for the Kaggle challenge <a href="https://www.kaggle.com/c/poker-rule-induction"> Poker Rule Induction </a>. Note that the given train dataset was not splitinto a training and test set, as is standard practice for machine learning. This document is part 2.
+
+To begin, we navigate to the required directory and load up the required libraries.
+
+
+## Required libraries
+```{r}
+setwd("O:/random projects/poker-rule-induction/")
+#libraries for naive bayes
+library("plyr")
+library('klaR')
+library('caret')
+```
+
+# Data pre-processing
+Next we import the datasets and have a look at a summary and a few random rows.
+```{r}
+train <- read.table(unz("train.csv.zip", "train.csv"), header=T, sep =",")
+test <- read.table(unz("test.csv.zip", "test.csv"), header=T, sep =",")
+train <-data.frame(train)
+# summaries
+count(train,"hand")
+str(train)
+```
+
+
+##  Method 2: K nearest neighbour (kNN)
+Given the Naive Bayes' poor performance at guessing the poker hand given a set of 5 cards, let's look at another common classifier - the k-nearest neighbour method. Hopefully this will take into account the interaction between the input variables - e.g. cards of the same suit, or cards in a series.
+
+We're using the same form of train as we did for Naive Bayes. That is, all columns are recognised as factors. 
+
+```{r}
+# load up required library
+library ("class")
+# class labels is 'hand' variable
+cls <- train[,11]
+
+# apply the model to the test dataset. We exclude column 11 from the test dataset, as this is what we wish to predict
+model.knn <- knn(train[,-11], test[,-11], cls, k = 1)
+summary(model.knn)
+```
+
+
+Since I haven't worked out how to evaluate a kNN model, we'll look at some sample rows from the test dataset.
+```{r}
+
+# how do you evaluate a knn model?
+cbind(test[10,],model.knn[10]) # incorrect - should be 0
+cbind(test[152,],model.knn[152]) # two pairs. Incorrect as hand=8 is a straight flush
+```
+
+Again, this doesn't look good. Uploading to kaggle confirms this :(

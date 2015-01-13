@@ -1,0 +1,72 @@
+---
+title: "Kaggle Poker Rule Induction"
+author: "June Lau"
+date: "Monday, December 29, 2014"
+output: html_document
+---
+
+# Purpose
+To document a random forest genetic algorithm approach to inferring rules for the Kaggle challenge <a href="https://www.kaggle.com/c/poker-rule-induction"> Poker Rule Induction </a>.
+
+To begin, we navigate to the required directory and load up the required libraries.
+## Required libraries
+```{r}
+setwd("O:/random projects/poker-rule-induction/")
+#libraries for naive bayes
+library("plyr")
+library('klaR')
+library('caret')
+```
+
+# Data pre-processing
+Next we import the datasets and have a look at a summary and a few random rows.
+```{r}
+train <- read.table(unz("train.csv.zip", "train.csv"), header=T, sep =",")
+test <- read.table(unz("test.csv.zip", "test.csv"), header=T, sep =",")
+train <-data.frame(train)
+# summaries
+count(train,"hand")
+str(train)
+
+#look at data
+train[train$hand==9,]
+train[train $S1== 4 & train$S2==4& train$S3==4& train$S4==4,][1:10]
+
+```
+
+# Testing various methods
+As Cattral's paper indicates, most classification methods perform poorly at identifying poker rules. We start by using very basic classification and regression techniques (CART) - Naive Bayes and k-nearest neighbour. Both of these fail miserably, and guessing 0 for all hands is a better option!
+
+
+## Method 1: Naive Bayes
+To use the Naive Bayes method, we convert all fields to factors. The suit values of 1,2,3,4 are not ordered as they are used to indicate the suit of a card - diamond, clubs, hearts and spades. We also convert all the card values (2 through to Ace) to factors.
+
+```{r}
+# turn all columns into factors
+train<-data.frame(apply(train, 2, as.factor))
+str(train)
+
+# only use suits as predictor variables
+p.var<-train[,-11]
+hand<-train[,11]
+
+model.NB<- train(p.var, hand, 'nb', trControl=trainControl(method='boot', number=20))
+```
+Not a pretty output! Let's take a look at the warnings.
+```{r}
+warnings()
+```
+Looks like the Naive Bayes method couldn't find instances of an outcome.
+
+This does not bode well. To further evaluate the appropriateness of the model, let's take a look at how it fared with fitting the training dataset. By calling the model variable, R outputs a summary of evaluation metrics. Based on the kappa statistic below, the Naive Bayes model we just generated doesn't fare much better than guessing.
+
+We can confirm this by looking at a confusion table.
+```{r}
+# view summary of the generated model
+model.NB
+# view variances against training dataset (aka confusion matrix)
+table(predict(model.NB$finalModel,p.var)$class, hand)
+```
+The confusion matrix shows that almost half of the hands with nothing (i.e. hand=0) have been wrongly classified as any of the other 9 hand types.
+
+We won't submit this as guessing 0 for all hands would be more accurate. Submitting this would be rather embarrasing!
